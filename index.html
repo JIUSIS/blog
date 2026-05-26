@@ -1,0 +1,2646 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+
+<meta http-equiv="Pragma" content="no-cache">
+
+<meta http-equiv="Expires" content="0">
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect x=%224%22 y=%2214%22 width=%2224%22 height=%224%22 rx=%222%22 fill=%22%231a1a1a%22/></svg>">
+<title>凡人生平 · 个人博客</title>
+
+<!-- 
+
+  ╔══════════════════════════════════════════════╗
+
+  ║  凡人生平 - 极简线条风格               ║
+
+  ║  功能：深色模式、搜索、文章弹窗、回到顶部    ║
+
+  ║  修改指南：搜索 "✏️ 修改这里" 来找到可改的地方 ║
+
+  ╚══════════════════════════════════════════════╝
+
+-->
+
+<!-- ✏️ 修改这里：Google Fonts 字体加载 -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;300;400;600&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+
+  /* ═══════════════════════════════════════
+
+     基础重置 & CSS 变量（颜色、字体等）
+
+     ═══════════════════════════════════════ */
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+
+    /* ✏️ 修改这里：改颜色只需改这几个变量 */
+
+    --bg: #fafaf9;          /* 页面背景色 */
+
+    --ink: #1a1a1a;         /* 文字颜色 */
+
+    --muted: #8a8a8a;       /* 浅灰色文字 */
+
+    --line: #d4d4d4;        /* 线条颜色 */
+
+    --accent: #2d2d2d;      /* 强调色 */
+
+    --card-bg: #ffffff;     /* 卡片背景 */
+
+    --nav-bg: rgba(250,250,249,0.85);  /* 导航栏背景 */
+
+    --modal-bg: #ffffff;    /* 弹窗背景 */
+
+    --serif: 'Noto Serif SC', 'Georgia', serif;    /* 衬线字体（文章标题用） */
+
+    --sans: 'Space Grotesk', 'Helvetica Neue', sans-serif;  /* 无衬线字体 */
+
+  }
+
+  /* 深色模式的颜色（点击月亮按钮切换） */
+
+  [data-theme="dark"] {
+
+    --bg: #0f0f0f;
+
+    --ink: #e8e8e8;
+
+    --muted: #6a6a6a;
+
+    --line: #2a2a2a;
+
+    --accent: #cccccc;
+
+    --card-bg: #1a1a1a;
+
+    --nav-bg: rgba(15,15,15,0.9);
+
+    --modal-bg: #1a1a1a;
+
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+
+    font-family: var(--sans);
+
+    background: var(--bg);
+
+    color: var(--ink);
+
+    line-height: 1.7;
+
+    -webkit-font-smoothing: antialiased;
+
+    transition: background 0.4s, color 0.4s;  /* 切换主题时平滑过渡 */
+
+  }
+
+  /* 通用线条样式 */
+
+  .line-h { width: 100%; height: 1px; background: var(--line); }
+
+  .line-v { width: 1px; height: 100%; background: var(--line); }
+
+  /* ═══════════════════════════════════════
+
+     阅读进度条（页面顶部的细线）
+
+     ═══════════════════════════════════════ */
+
+  #progress-bar {
+
+    position: fixed;
+
+    top: 0; left: 0;
+
+    height: 2px;
+
+    background: var(--ink);
+
+    z-index: 999;
+
+    width: 0%;
+
+    transition: width 0.1s;
+
+  }
+
+  /* ═══════════════════════════════════════
+
+     导航栏
+
+     ═══════════════════════════════════════ */
+
+  nav {
+
+    position: fixed;
+
+    top: 2px; left: 0; right: 0;  /* top:2px 留出进度条空间 */
+
+    z-index: 100;
+
+    background: var(--nav-bg);
+
+    backdrop-filter: blur(12px);
+
+    -webkit-backdrop-filter: blur(12px);
+
+    transition: background 0.4s;
+
+  }
+
+  nav .inner {
+
+    max-width: 960px;
+
+    margin: 0 auto;
+
+    padding: 0 2rem;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    height: 60px;
+
+  }
+
+  nav .logo {
+
+    font-family: var(--serif);
+
+    font-size: 1.1rem;
+
+    font-weight: 300;
+
+    letter-spacing: 0.08em;
+
+    color: var(--ink);
+
+    text-decoration: none;
+
+  }
+
+  nav .logo span { font-weight: 600; }
+
+  /* 导航链接 */
+
+  nav .links {
+
+    display: flex;
+
+    gap: 2rem;
+
+    align-items: center;
+
+  }
+
+  nav .links a {
+
+    font-size: 0.8rem;
+
+    letter-spacing: 0.12em;
+
+    text-transform: uppercase;
+
+    color: var(--muted);
+
+    text-decoration: none;
+
+    transition: color 0.3s;
+
+    position: relative;
+
+  }
+
+  nav .links a::after {
+
+    content: '';
+
+    position: absolute;
+
+    bottom: -4px; left: 0;
+
+    width: 0; height: 1px;
+
+    background: var(--ink);
+
+    transition: width 0.3s;
+
+  }
+
+  nav .links a:hover { color: var(--ink); }
+
+  nav .links a:hover::after { width: 100%; }
+
+  /* 深色模式切换按钮 */
+
+  .theme-toggle {
+
+    background: none;
+
+    border: 1px solid var(--line);
+
+    border-radius: 50%;
+
+    width: 32px; height: 32px;
+
+    cursor: pointer;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 0.9rem;
+
+    color: var(--ink);
+
+    transition: all 0.3s;
+
+  }
+
+  .theme-toggle:hover {
+
+    border-color: var(--ink);
+
+    transform: rotate(30deg);
+
+  }
+
+  /* 手机端汉堡菜单按钮 */
+
+  .hamburger {
+
+    display: none;
+
+    background: none;
+
+    border: none;
+
+    cursor: pointer;
+
+    width: 28px; height: 20px;
+
+    position: relative;
+
+    z-index: 200;
+
+  }
+
+  .hamburger span {
+
+    display: block;
+
+    width: 100%; height: 1px;
+
+    background: var(--ink);
+
+    position: absolute;
+
+    left: 0;
+
+    transition: all 0.3s;
+
+  }
+
+  .hamburger span:nth-child(1) { top: 0; }
+
+  .hamburger span:nth-child(2) { top: 50%; }
+
+  .hamburger span:nth-child(3) { top: 100%; }
+
+  /* 汉堡菜单打开时的动画 */
+
+  .hamburger.active span:nth-child(1) { top: 50%; transform: rotate(45deg); }
+
+  .hamburger.active span:nth-child(2) { opacity: 0; }
+
+  .hamburger.active span:nth-child(3) { top: 50%; transform: rotate(-45deg); }
+
+  /* 手机端侧边菜单 */
+
+  .mobile-menu {
+
+    display: none;
+
+    position: fixed;
+
+    top: 0; right: -100%;
+
+    width: 70%; height: 100vh;
+
+    background: var(--card-bg);
+
+    z-index: 150;
+
+    padding: 80px 2rem 2rem;
+
+    transition: right 0.3s ease;
+
+    border-left: 1px solid var(--line);
+
+  }
+
+  .mobile-menu.open { right: 0; }
+
+  .mobile-menu a {
+
+    display: block;
+
+    font-size: 1rem;
+
+    letter-spacing: 0.1em;
+
+    text-transform: uppercase;
+
+    color: var(--muted);
+
+    text-decoration: none;
+
+    padding: 1.2rem 0;
+
+    border-bottom: 1px solid var(--line);
+
+    transition: color 0.3s;
+
+  }
+
+  .mobile-menu a:hover { color: var(--ink); }
+
+  /* 遮罩层 */
+
+  .overlay {
+
+    display: none;
+
+    position: fixed;
+
+    inset: 0;
+
+    background: rgba(0,0,0,0.3);
+
+    z-index: 140;
+
+    opacity: 0;
+
+    pointer-events: none;
+
+    transition: opacity 0.3s;
+
+  }
+
+  .overlay.show { opacity: 1; pointer-events: auto; }
+
+  /* ═══════════════════════════════════════
+
+     Hero 首屏
+
+     ═══════════════════════════════════════ */
+
+  .hero {
+
+    min-height: 100vh;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    position: relative;
+
+    overflow: hidden;
+
+  }
+
+  .hero .grid-bg {
+
+    position: absolute;
+
+    inset: 0;
+
+    background-image:
+
+      linear-gradient(var(--line) 1px, transparent 1px),
+
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+
+    background-size: 80px 80px;
+
+    opacity: 0.4;
+
+  }
+
+  .hero .content {
+
+    position: relative;
+
+    text-align: center;
+
+    padding: 2rem;
+
+  }
+
+  .hero h1 {
+
+    font-family: var(--serif);
+
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+
+    font-weight: 200;
+
+    letter-spacing: -0.02em;
+
+    line-height: 1.2;
+
+    margin-bottom: 1.5rem;
+
+  }
+
+  .hero h1 em {
+
+    font-style: normal;
+
+    position: relative;
+
+    display: inline-block;
+
+  }
+
+  .hero h1 em::after {
+
+    content: '';
+
+    position: absolute;
+
+    bottom: 0.1em; left: 0;
+
+    width: 100%; height: 2px;
+
+    background: var(--ink);
+
+  }
+
+  .hero .subtitle {
+
+    font-size: 0.85rem;
+
+    letter-spacing: 0.2em;
+
+    text-transform: uppercase;
+
+    color: var(--muted);
+
+    margin-bottom: 3rem;
+
+  }
+
+  .hero .divider {
+
+    width: 60px;
+
+    height: 1px;
+
+    background: var(--ink);
+
+    margin: 0 auto 1.5rem;
+
+  }
+
+  /* 实时时钟 */
+
+  .hero .clock {
+
+    font-size: 0.75rem;
+
+    letter-spacing: 0.15em;
+
+    color: var(--muted);
+
+    font-variant-numeric: tabular-nums;
+
+  }
+
+  /* ═══════════════════════════════════════
+
+     通用 Section 样式
+
+     ═══════════════════════════════════════ */
+
+  section { padding: 6rem 2rem; }
+
+  .section-inner { max-width: 720px; margin: 0 auto; }
+
+  .section-label {
+
+    font-size: 0.7rem;
+
+    letter-spacing: 0.25em;
+
+    text-transform: uppercase;
+
+    color: var(--muted);
+
+    margin-bottom: 2rem;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 1rem;
+
+  }
+
+  .section-label::before {
+
+    content: '';
+
+    width: 40px; height: 1px;
+
+    background: var(--line);
+
+  }
+
+  /* ═══════════════════════════════════════
+
+     搜索框
+
+     ═══════════════════════════════════════ */
+
+  .search-box {
+
+    margin-bottom: 2rem;
+
+    position: relative;
+
+  }
+
+  .search-box input {
+
+    width: 100%;
+
+    padding: 0.8rem 1rem 0.8rem 2.5rem;
+
+    border: 1px solid var(--line);
+
+    border-radius: 4px;
+
+    background: var(--card-bg);
+
+    color: var(--ink);
+
+    font-family: var(--sans);
+
+    font-size: 0.85rem;
+
+    outline: none;
+
+    transition: border-color 0.3s, background 0.4s, color 0.4s;
+
+  }
+
+  .search-box input:focus { border-color: var(--ink); }
+
+  .search-box input::placeholder { color: var(--muted); }
+
+  .search-box .search-icon {
+
+    position: absolute;
+
+    left: 0.8rem; top: 50%;
+
+    transform: translateY(-50%);
+
+    color: var(--muted);
+
+    font-size: 0.9rem;
+
+    pointer-events: none;
+
+  }
+
+  /* 搜索无结果提示 */
+
+  .no-result {
+
+    text-align: center;
+
+    padding: 3rem 0;
+
+    color: var(--muted);
+
+    font-size: 0.85rem;
+
+    display: none;
+
+  }
+
+  /* ═══════════════════════════════════════
+
+     文章列表
+
+     ═══════════════════════════════════════ */
+
+  .article-list { display: flex; flex-direction: column; }
+
+  .article-item {
+
+    display: grid;
+
+    grid-template-columns: auto 1fr auto;
+
+    gap: 2rem;
+
+    align-items: baseline;
+
+    padding: 2rem 0;
+
+    border-bottom: 1px solid var(--line);
+
+    text-decoration: none;
+
+    color: var(--ink);
+
+    transition: all 0.3s;
+
+    cursor: pointer;
+
+  }
+
+  .article-item:first-child { border-top: 1px solid var(--line); }
+
+  .article-item:hover { padding-left: 1rem; }
+
+  .article-item:hover .article-title { color: var(--accent); }
+
+  .article-item.hidden { display: none; }  /* 搜索时隐藏不匹配的文章 */
+
+  .article-date {
+
+    font-size: 0.75rem;
+
+    letter-spacing: 0.1em;
+
+    color: var(--muted);
+
+    font-variant-numeric: tabular-nums;
+
+    min-width: 100px;
+
+  }
+
+  .article-title {
+
+    font-family: var(--serif);
+
+    font-size: 1.15rem;
+
+    font-weight: 400;
+
+    transition: color 0.3s;
+
+  }
+
+  .article-tag {
+
+    font-size: 0.65rem;
+
+    letter-spacing: 0.15em;
+
+    text-transform: uppercase;
+
+    color: var(--muted);
+
+    border: 1px solid var(--line);
+
+    padding: 0.2em 0.8em;
+
+    border-radius: 2px;
+
+    white-space: nowrap;
+
+  }
+
+  /* ═══════════════════════════════════════
+
+     文章弹窗（点击文章后显示全文）
+
+     ═══════════════════════════════════════ */
+
+  .article-modal {
+
+    display: none;
+
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 300;
+
+    background: rgba(0,0,0,0.5);
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 2rem;
+
+  }
+
+  .article-modal.open { display: flex; }
+
+  .article-modal-content {
+
+    background: var(--modal-bg);
+
+    max-width: 700px;
+
+    width: 100%;
+
+    max-height: 80vh;
+
+    overflow-y: auto;
+
+    padding: 3rem;
+
+    position: relative;
+
+    border: 1px solid var(--line);
+
+    transition: background 0.4s;
+
+  }
+
+  .article-modal-close {
+
+    position: absolute;
+
+    top: 1.5rem; right: 1.5rem;
+
+    background: none;
+
+    border: 1px solid var(--line);
+
+    border-radius: 50%;
+
+    width: 32px; height: 32px;
+
+    cursor: pointer;
+
+    font-size: 1rem;
+
+    color: var(--muted);
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    transition: all 0.3s;
+
+  }
+
+  .article-modal-close:hover {
+
+    border-color: var(--ink);
+
+    color: var(--ink);
+
+  }
+
+  .article-modal-content h2 {
+
+    font-family: var(--serif);
+
+    font-size: 1.6rem;
+
+    font-weight: 400;
+
+    margin-bottom: 0.5rem;
+
+    line-height: 1.4;
+
+  }
+
+  .article-modal-meta {
+
+    font-size: 0.75rem;
+
+    color: var(--muted);
+
+    margin-bottom: 2rem;
+
+    display: flex;
+
+    gap: 1rem;
+
+    align-items: center;
+
+  }
+
+  .article-modal-body {
+
+    font-family: var(--serif);
+
+    font-size: 1rem;
+
+    font-weight: 300;
+
+    line-height: 2;
+
+    color: var(--ink);
+
+  }
+
+  .article-modal-body p {
+
+    margin-bottom: 1.5rem;
+
+  }
+
+  /* ═══════════════════════════════════════
+
+     关于我
+
+     ═══════════════════════════════════════ */
+
+  .about-grid {
+
+    display: grid;
+
+    grid-template-columns: 1fr 1px 1fr;
+
+    gap: 3rem;
+
+  }
+
+  .about-text p {
+
+    font-family: var(--serif);
+
+    font-size: 1rem;
+
+    font-weight: 300;
+
+    line-height: 2;
+
+    color: var(--ink);
+
+    margin-bottom: 1.5rem;
+
+  }
+
+  .about-text p:last-child { margin-bottom: 0; }
+
+  .about-info { display: flex; flex-direction: column; gap: 1.5rem; }
+
+  .info-item { display: flex; flex-direction: column; gap: 0.3rem; }
+
+  .info-label {
+
+    font-size: 0.65rem;
+
+    letter-spacing: 0.2em;
+
+    text-transform: uppercase;
+
+    color: var(--muted);
+
+  }
+
+  .info-value { font-size: 0.95rem; color: var(--ink); }
+
+  /* ═══════════════════════════════════════
+
+     联系方式
+
+     ═══════════════════════════════════════ */
+
+  .contact-links { display: flex; flex-direction: column; }
+
+  .contact-item {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 1.5rem 0;
+
+    border-bottom: 1px solid var(--line);
+
+    text-decoration: none;
+
+    color: var(--ink);
+
+    transition: all 0.3s;
+
+    cursor: pointer;
+
+  }
+
+  .contact-item:first-child { border-top: 1px solid var(--line); }
+
+  .contact-item:hover { padding-left: 1rem; }
+
+  .contact-name { font-size: 0.95rem; letter-spacing: 0.05em; }
+
+  .contact-arrow {
+
+    font-size: 1.2rem;
+
+    color: var(--muted);
+
+    transition: color 0.3s;
+
+  }
+
+  .contact-item:hover .contact-arrow { color: var(--ink); }
+
+  /* ═══════════════════════════════════════
+
+     页脚
+
+     ═══════════════════════════════════════ */
+
+  footer { padding: 3rem 2rem; text-align: center; }
+
+  footer p {
+
+    font-size: 0.7rem;
+
+    letter-spacing: 0.15em;
+
+    text-transform: uppercase;
+
+    color: var(--muted);
+
+  }
+
+  footer .line-h {
+
+    margin-bottom: 2rem;
+
+    max-width: 720px;
+
+    margin-left: auto;
+
+    margin-right: auto;
+
+  }
+
+  /* ═══════════════════════════════════════
+
+     回到顶部按钮
+
+     ═══════════════════════════════════════ */
+
+  .back-to-top {
+
+    position: fixed;
+
+    bottom: 2rem; right: 2rem;
+
+    width: 40px; height: 40px;
+
+    background: var(--card-bg);
+
+    border: 1px solid var(--line);
+
+    border-radius: 50%;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    cursor: pointer;
+
+    opacity: 0;
+
+    visibility: hidden;
+
+    transition: all 0.3s;
+
+    z-index: 90;
+
+    color: var(--ink);
+
+    font-size: 1.1rem;
+
+  }
+
+  .back-to-top.show {
+
+    opacity: 1;
+
+    visibility: visible;
+
+  }
+
+  .back-to-top:hover {
+
+    border-color: var(--ink);
+
+    transform: translateY(-2px);
+
+  }
+
+  /* ═══════════════════════════════════════
+
+     滚动渐入动画
+
+     ═══════════════════════════════════════ */
+
+  .reveal {
+
+    opacity: 0;
+
+    transform: translateY(30px);
+
+    transition: opacity 0.8s ease, transform 0.8s ease;
+
+  }
+
+  .reveal.visible {
+
+    opacity: 1;
+
+    transform: translateY(0);
+
+  }
+
+  /* ═══════════════════════════════════════
+
+     鼠标跟随线条画布
+
+     ═══════════════════════════════════════ */
+
+  #lineCanvas {
+
+    position: fixed;
+
+    top: 0; left: 0;
+
+    width: 100%; height: 100%;
+
+    z-index: 1;
+
+    pointer-events: none;
+
+    opacity: 0.85;
+
+  }
+
+  [data-theme="dark"] #lineCanvas {
+
+    opacity: 0.55;
+
+  }
+
+  /* ═══════════════════════════════════════
+
+     响应式（手机端适配）
+
+     ═══════════════════════════════════════ */
+
+  @media (max-width: 640px) {
+
+    .about-grid {
+
+      grid-template-columns: 1fr;
+
+      gap: 2rem;
+
+    }
+
+    .about-grid .line-v { display: none; }
+
+    .article-item {
+
+      grid-template-columns: 1fr;
+
+      gap: 0.5rem;
+
+    }
+
+    .article-date { order: -1; }
+
+    .article-tag { justify-self: start; }
+
+    /* 手机端：隐藏桌面导航，显示汉堡菜单 */
+
+    nav .links { display: none; }
+
+    .hamburger { display: block; }
+
+    .mobile-menu { display: block; }
+
+    .overlay { display: block; }
+
+    .article-modal-content { padding: 2rem 1.5rem; }
+
+    .article-modal-content h2 { font-size: 1.3rem; }
+
+  }
+
+  /* ═══════════════════════════════════════
+
+     评论区
+
+     ═══════════════════════════════════════ */
+
+  .comment-section {
+
+    margin-top: 3rem;
+
+    padding-top: 2rem;
+
+    border-top: 1px solid var(--line);
+
+  }
+
+  .comment-heading {
+
+    font-family: var(--serif);
+
+    font-size: 1rem;
+
+    margin-bottom: 1.5rem;
+
+    font-weight: 400;
+
+    color: var(--ink);
+
+  }
+
+  .comment-item {
+
+    padding: 1rem 0;
+
+    border-bottom: 1px solid var(--line);
+
+    transition: border-color 0.4s;
+
+  }
+
+  .comment-nick {
+
+    font-weight: 500;
+
+    font-size: 0.85rem;
+
+    color: var(--ink);
+
+  }
+
+  .comment-nick .comment-contact {
+
+    color: var(--muted);
+
+    text-decoration: none;
+
+    font-weight: 400;
+
+    font-size: 0.75rem;
+
+  }
+
+  .comment-date {
+
+    font-size: 0.7rem;
+
+    color: var(--muted);
+
+    margin-left: 0.5rem;
+
+  }
+
+  .comment-text {
+
+    margin-top: 0.4rem;
+
+    font-size: 0.9rem;
+
+    line-height: 1.6;
+
+    color: var(--ink);
+
+  }
+
+  .comment-form {
+
+    margin-top: 2rem;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 0.6rem;
+
+  }
+
+  .comment-form input,
+
+  .comment-form textarea {
+
+    padding: 0.6rem 0.8rem;
+
+    border: 1px solid var(--line);
+
+    border-radius: 4px;
+
+    background: var(--bg);
+
+    color: var(--ink);
+
+    font-family: var(--sans);
+
+    font-size: 0.85rem;
+
+    outline: none;
+
+    transition: border-color 0.3s, background 0.4s, color 0.4s;
+
+  }
+
+  .comment-form input:focus,
+
+  .comment-form textarea:focus {
+
+    border-color: var(--ink);
+
+  }
+
+  .comment-form textarea {
+
+    resize: vertical;
+
+    min-height: 60px;
+
+  }
+
+  .comment-form .btn-submit {
+
+    padding: 0.6rem 1.5rem;
+
+    border: none;
+
+    border-radius: 4px;
+
+    background: var(--ink);
+
+    color: var(--bg);
+
+    font-family: var(--sans);
+
+    font-size: 0.8rem;
+
+    cursor: pointer;
+
+    letter-spacing: 0.05em;
+
+    align-self: flex-start;
+
+    transition: opacity 0.3s, background 0.4s, color 0.4s;
+
+  }
+
+  .comment-form .btn-submit:hover {
+
+    opacity: 0.8;
+
+  }
+
+  .comment-form .btn-submit:disabled {
+
+    opacity: 0.5;
+
+    cursor: not-allowed;
+
+  }
+
+  .comment-empty {
+
+    text-align: center;
+
+    color: var(--muted);
+
+    font-size: 0.85rem;
+
+    padding: 1.5rem 0;
+
+  }
+
+</style>
+
+</head>
+
+<body>
+
+<!-- ═══════════ 鼠标跟随线条画布 ═══════════ -->
+
+<canvas id="lineCanvas"></canvas>
+
+<!-- ═══════════ 阅读进度条 ═══════════ -->
+
+<div id="progress-bar"></div>
+
+<!-- ═══════════ 导航栏 ═══════════ -->
+
+<nav>
+
+  <div class="inner">
+
+    <!-- ✏️ 修改这里：博客名称 -->
+
+    <a href="#" class="logo">凡人生平</a>
+
+    <!-- 桌面端导航链接 -->
+
+    <div class="links">
+
+      <a href="#articles">文章</a>
+
+      <a href="#about">关于</a>
+
+      <a href="#contact">联系</a>
+
+      <a href="write.php" style="color:var(--ink);border:1px solid var(--line);padding:0.3em 0.8em;border-radius:3px;font-size:0.75rem;">写文章</a>
+
+      <button class="theme-toggle" id="themeToggle" title="切换深色模式">☽</button>
+
+    </div>
+
+    <!-- 手机端汉堡菜单按钮 -->
+
+    <button class="hamburger" id="hamburgerBtn" aria-label="菜单">
+
+      <span></span><span></span><span></span>
+
+    </button>
+
+  </div>
+
+</nav>
+
+<!-- 手机端侧边菜单 -->
+
+<div class="overlay" id="overlay"></div>
+
+<div class="mobile-menu" id="mobileMenu">
+
+  <a href="#articles" class="mobile-link">文章</a>
+
+  <a href="#about" class="mobile-link">关于</a>
+
+  <a href="#contact" class="mobile-link">联系</a>
+
+  <a href="write.php" class="mobile-link" style="color:var(--ink);">✍️ 写文章</a>
+
+  <a href="#" id="mobileThemeToggle" class="mobile-link">切换深色模式 ☽</a>
+
+</div>
+
+<!-- ═══════════ Hero 首屏 ═══════════ -->
+
+<div class="hero">
+
+  <div class="grid-bg"></div>
+
+  <div class="content">
+
+    <!-- ✏️ 修改这里：副标题 -->
+
+    <p class="subtitle">Personal Blog</p>
+
+    <!-- ✏️ 修改这里：主标题 -->
+
+    <h1>用线条丈量<br><em>思考的边界</em></h1>
+
+    <div class="divider"></div>
+
+    <!-- 实时时钟 -->
+
+    <p class="clock" id="clock"></p>
+
+  </div>
+
+</div>
+
+<!-- ═══════════ 文章列表 ═══════════ -->
+
+<section id="articles">
+
+  <div class="section-inner">
+
+    <div class="section-label">Latest Writings</div>
+
+    <!-- 搜索框 -->
+
+    <div class="search-box">
+
+      <span class="search-icon">⌕</span>
+
+      <!-- ✏️ 修改这里：搜索框占位文字 -->
+
+      <input type="text" id="searchInput" placeholder="搜索文章标题或分类...">
+
+    </div>
+
+    <div class="article-list" id="articleList">
+
+      <!-- 文章由 JavaScript 从 api.php 动态加载 -->
+
+      <div style="text-align:center;padding:3rem 0;color:var(--muted);font-size:0.85rem;">加载中...</div>
+
+    </div>
+
+    <!-- 搜索无结果提示 -->
+
+    <div class="no-result" id="noResult">没有找到匹配的文章 🔍
+
+  </div>
+
+</section>
+
+<div class="line-h" style="max-width: 720px; margin: 0 auto;"></div>
+
+<!-- ═══════════ 关于我 ═══════════ -->
+
+<section id="about">
+
+  <div class="section-inner">
+
+    <div class="section-label">About Me</div>
+
+    <div class="about-grid reveal">
+
+      <div class="about-text">
+
+        <!-- ✏️ 修改这里：个人介绍文字 -->
+
+        <p>
+
+          我是一个喜欢用极简方式思考的人。
+
+          相信好的设计不需要多余的装饰，
+
+          就像好的文字不需要华丽的辞藻。
+
+        </p>
+
+        <p>
+
+          在代码与文字之间寻找平衡，
+
+          在留白与线条之间构建意义。
+
+          这里记录我的思考、设计与技术探索。
+
+        </p>
+
+      </div>
+
+      <div class="line-v"></div>
+
+      <div class="about-info">
+
+        <!-- ✏️ 修改这里：个人信息 -->
+
+        <div class="info-item">
+
+          <span class="info-label">坐标</span>
+
+          <span class="info-value">数字世界 · 某个角落</span>
+
+        </div>
+
+        <div class="info-item">
+
+          <span class="info-label">专注</span>
+
+          <span class="info-value">设计 · 前端 · 写作</span>
+
+        </div>
+
+        <div class="info-item">
+
+          <span class="info-label">信仰</span>
+
+          <span class="info-value">少即是多，线条即力量</span>
+
+        </div>
+
+        <div class="info-item">
+
+          <span class="info-label">工具</span>
+
+          <span class="info-value">Figma · VS Code · 一支笔</span>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+<div class="line-h" style="max-width: 720px; margin: 0 auto;"></div>
+
+<!-- ═══════════ 联系方式 ═══════════ -->
+
+<section id="contact">
+
+  <div class="section-inner">
+
+    <div class="section-label">Get In Touch</div>
+
+    <div class="contact-links">
+
+      <!-- ✏️ 修改这里：联系方式链接 -->
+
+      <a class="contact-item reveal" href="mailto:eiol@qq.com">
+
+        <span class="contact-name">Email</span>
+
+        <span class="contact-arrow">→</span>
+
+      </a>
+
+      <a class="contact-item reveal" href="https://github.com/JIUSIS" target="_blank" rel="noopener">
+
+        <span class="contact-name">GitHub</span>
+
+        <span class="contact-arrow">→</span>
+
+      </a>
+
+    </div>
+
+  </div>
+
+</section>
+
+<!-- ═══════════ 页脚 ═══════════ -->
+
+<footer>
+
+  <div class="line-h"></div>
+
+  <!-- ✏️ 修改这里：页脚版权文字 -->
+
+  <p>© 2026 凡人生平 · Built with lines & thoughts</p>
+
+</footer>
+
+<!-- ═══════════ 回到顶部按钮 ═══════════ -->
+
+<button class="back-to-top" id="backToTop" title="回到顶部">↑</button>
+
+<!-- ═══════════ 文章弹窗 ═══════════ -->
+
+<div class="article-modal" id="articleModal">
+
+  <div class="article-modal-content">
+
+    <button class="article-modal-close" id="modalClose">✕</button>
+
+    <h2 id="modalTitle"></h2>
+
+    <div class="article-modal-meta">
+
+      <span id="modalDate"></span>
+
+      <span id="modalTag"></span>
+
+    </div>
+
+    <div class="article-modal-body" id="modalBody"></div>
+
+    <!-- 评论区 -->
+
+    <div class="comment-section" id="commentSection">
+
+      <h3 class="comment-heading">留言</h3>
+
+      <div class="comment-list" id="commentList">
+
+        <div class="comment-empty">加载中...</div>
+
+      </div>
+
+      <form class="comment-form" id="commentForm">
+
+        <input type="text" name="nickname" placeholder="昵称 *" maxlength="30" required>
+
+        <input type="text" name="contact" placeholder="联系方式（选填，邮箱/网站等）" maxlength="100">
+
+        <textarea name="content" placeholder="说点什么..." maxlength="1000" rows="3" required></textarea>
+
+        <button type="submit" class="btn-submit">发布留言</button>
+
+      </form>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ═══════════ JavaScript ═══════════ -->
+
+<script>
+
+  /*
+
+   * ╔══════════════════════════════════════════════╗
+
+   * ║  这里是博客的「功能代码」                       ║
+
+   * ║  小白建议：看不懂没关系，不要随便改就好          ║
+
+   * ║  想改文字/颜色/链接？去上面找 ✏️ 标记的地方     ║
+
+   * ╚══════════════════════════════════════════════╝
+
+   */
+
+  // ─── 工具函数 ───
+
+  // 节流函数：防止某个操作被触发太频繁（比如滚动事件）
+
+  function throttle(fn, delay) {
+
+    let last = 0;
+
+    return function(...args) {
+
+      const now = Date.now();
+
+      if (now - last >= delay) {
+
+        last = now;
+
+        fn.apply(this, args);
+
+      }
+
+    };
+
+  }
+
+  // 把文章 data-content 里的 \n\n 转换成 HTML 段落
+
+  function contentToHtml(text) {
+
+    if (!text) return '<p>暂无内容</p>';
+
+    // 支持实际换行和字面量\n两种格式
+
+    var paragraphs = text.split(/\n\n|\\n\\n/);
+
+    return paragraphs.map(function(p) {
+
+      return '<p>' + escapeHtml(p) + '</p>';
+
+    }).join('');
+
+  }
+
+  // ─── 1. 深色模式切换 ───
+
+  const themeToggle = document.getElementById('themeToggle');
+
+  const mobileThemeToggle = document.getElementById('mobileThemeToggle');
+
+  // 读取用户上次选择的主题（存在浏览器里，关掉页面也不会忘）
+
+  const savedTheme = localStorage.getItem('mimo-theme');
+
+  if (savedTheme === 'dark') {
+
+    document.documentElement.setAttribute('data-theme', 'dark');
+
+    themeToggle.textContent = '☀';
+
+    mobileThemeToggle.textContent = '切换亮色模式 ☀';
+
+  }
+
+  // 切换主题的函数
+
+  function toggleTheme() {
+
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+    if (isDark) {
+
+      document.documentElement.removeAttribute('data-theme');
+
+      localStorage.setItem('mimo-theme', 'light');
+
+      themeToggle.textContent = '☽';
+
+      mobileThemeToggle.textContent = '切换深色模式 ☽';
+
+    } else {
+
+      document.documentElement.setAttribute('data-theme', 'dark');
+
+      localStorage.setItem('mimo-theme', 'dark');
+
+      themeToggle.textContent = '☀';
+
+      mobileThemeToggle.textContent = '切换亮色模式 ☀';
+
+    }
+
+  }
+
+  themeToggle.addEventListener('click', toggleTheme);
+
+  mobileThemeToggle.addEventListener('click', function(e) {
+
+    e.preventDefault();
+
+    toggleTheme();
+
+    closeMobileMenu(); // 切换后关闭菜单
+
+  });
+
+  // ─── 2. 手机端汉堡菜单 ───
+
+  const hamburgerBtn = document.getElementById('hamburgerBtn');
+
+  const mobileMenu = document.getElementById('mobileMenu');
+
+  const overlay = document.getElementById('overlay');
+
+  function openMobileMenu() {
+
+    hamburgerBtn.classList.add('active');
+
+    mobileMenu.classList.add('open');
+
+    overlay.classList.add('show');
+
+    document.body.style.overflow = 'hidden'; // 防止背景滚动
+
+  }
+
+  function closeMobileMenu() {
+
+    hamburgerBtn.classList.remove('active');
+
+    mobileMenu.classList.remove('open');
+
+    overlay.classList.remove('show');
+
+    document.body.style.overflow = '';
+
+  }
+
+  hamburgerBtn.addEventListener('click', function() {
+
+    if (mobileMenu.classList.contains('open')) {
+
+      closeMobileMenu();
+
+    } else {
+
+      openMobileMenu();
+
+    }
+
+  });
+
+  overlay.addEventListener('click', closeMobileMenu);
+
+  // 点击菜单链接后自动关闭菜单
+
+  document.querySelectorAll('.mobile-link').forEach(function(link) {
+
+    link.addEventListener('click', closeMobileMenu);
+
+  });
+
+  // ─── 3. 阅读进度条 ───
+
+  const progressBar = document.getElementById('progress-bar');
+
+  window.addEventListener('scroll', throttle(function() {
+
+    // 计算页面滚动了百分之多少
+
+    const scrollTop = window.scrollY;
+
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+
+    const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+
+    progressBar.style.width = progress + '%';
+
+  }, 50));
+
+  // ─── 4. 导航栏阴影 ───
+
+  window.addEventListener('scroll', throttle(function() {
+
+    const nav = document.querySelector('nav');
+
+    if (window.scrollY > 50) {
+
+      nav.style.boxShadow = '0 1px 0 var(--line)';
+
+    } else {
+
+      nav.style.boxShadow = 'none';
+
+    }
+
+  }, 100));
+
+  // ─── 5. 滚动渐入动画 ───
+
+  const observer = new IntersectionObserver(function(entries) {
+
+    entries.forEach(function(entry) {
+
+      if (entry.isIntersecting) {
+
+        entry.target.classList.add('visible');
+
+      }
+
+    });
+
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.reveal').forEach(function(el) {
+
+    observer.observe(el);
+
+  });
+
+  // ─── 6. 回到顶部按钮 ───
+
+  const backToTop = document.getElementById('backToTop');
+
+  window.addEventListener('scroll', throttle(function() {
+
+    if (window.scrollY > 500) {
+
+      backToTop.classList.add('show');
+
+    } else {
+
+      backToTop.classList.remove('show');
+
+    }
+
+  }, 100));
+
+  backToTop.addEventListener('click', function() {
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  });
+
+  // ─── 7. 实时时钟 ───
+
+  const clockEl = document.getElementById('clock');
+
+  function updateClock() {
+
+    const now = new Date();
+
+    const h = String(now.getHours()).padStart(2, '0');
+
+    const m = String(now.getMinutes()).padStart(2, '0');
+
+    const s = String(now.getSeconds()).padStart(2, '0');
+
+    const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+
+    const day = weekDays[now.getDay()];
+
+    clockEl.textContent = h + ':' + m + ':' + s + ' · 星期' + day;
+
+  }
+
+  updateClock();
+
+  setInterval(updateClock, 1000);
+
+  // ─── 8. 从 API 加载文章 + 搜索 ───
+
+  const searchInput = document.getElementById('searchInput');
+
+  const noResult = document.getElementById('noResult');
+
+  const articleListEl = document.getElementById('articleList');
+
+  const API_URL = 'api.php';
+
+  // 存储所有文章数据
+
+  let allArticles = [];
+
+  // 从 API 加载文章
+
+  async function loadArticles() {
+
+    try {
+
+      const res = await fetch(API_URL);
+
+      const data = await res.json();
+
+      if (data.success && data.articles && data.articles.length > 0) {
+
+        allArticles = data.articles;
+
+        renderArticles(allArticles);
+
+      } else {
+
+        // API 没有文章时，显示空状态
+
+        renderArticles([]);
+
+      }
+
+    } catch (err) {
+
+      // API 不可用时，显示空状态
+
+      renderArticles([]);
+
+    }
+
+  }
+
+  // 渲染文章列表到页面
+
+  function renderArticles(articles) {
+
+    if (articles.length === 0) {
+
+      articleListEl.innerHTML = '<div style="text-align:center;padding:3rem 0;color:var(--muted);">还没有文章，去 <a href="write.php" style="color:var(--ink);border-bottom:1px solid var(--ink);">写一篇</a> 吧 ✍️</div>';
+
+      return;
+
+    }
+
+    articleListEl.innerHTML = articles.map(function(art) {
+
+      return '<div class="article-item reveal" ' +
+
+        'data-title="' + escapeHtml(art.title) + '" ' +
+
+        'data-tag="' + escapeHtml(art.tag) + '" ' +
+
+        'data-date="' + escapeHtml(art.date) + '" ' +
+
+        'data-content="' + escapeAttr(art.content) + '" data-id="' + escapeAttr(art.id || '') + '">' +
+
+        '<span class="article-date">' + escapeHtml(art.date) + '</span>' +
+
+        '<span class="article-title">' + escapeHtml(art.title) + '</span>' +
+
+        '<span class="article-tag">' + escapeHtml(art.tag) + '</span>' +
+
+      '</div>';
+
+    }).join('');
+
+    // 强制隐藏无结果提示
+
+    noResult.style.display = 'none';
+
+    // 重新绑定事件
+
+    bindArticleEvents();
+
+    observeRevealElements();
+
+  }
+
+  // HTML 转义（防 XSS）
+
+  function escapeHtml(str) {
+
+    if (!str) return '';
+
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+  }
+
+  // 属性值转义
+
+  function escapeAttr(str) {
+    if (!str) return '';
+    return str.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'&#10;').replace(/\r/g,'');
+  }  // 为新渲染的文章绑定点击和搜索事件
+
+  function bindArticleEvents() {
+
+    const items = document.querySelectorAll('.article-item');
+
+    // 搜索
+
+    searchInput.oninput = function() {
+
+      const query = this.value.trim().toLowerCase();
+
+      let visibleCount = 0;
+
+      items.forEach(function(item) {
+
+        const title = (item.getAttribute('data-title') || '').toLowerCase();
+
+        const tag = (item.getAttribute('data-tag') || '').toLowerCase();
+
+        const match = title.includes(query) || tag.includes(query);
+
+        item.classList.toggle('hidden', !match);
+
+        if (match) visibleCount++;
+
+      });
+
+      noResult.style.display = visibleCount === 0 ? 'block' : 'none';
+
+    };
+
+    // 点击打开弹窗
+
+    items.forEach(function(item) {
+
+      item.addEventListener('click', function() {
+
+        openModal(
+
+          this.getAttribute('data-id'),
+
+          this.getAttribute('data-title'),
+
+          this.getAttribute('data-date'),
+
+          this.getAttribute('data-tag'),
+
+          this.getAttribute('data-content')
+
+        );
+
+      });
+
+    });
+
+  }
+
+  // IntersectionObserver 用于渐入动画
+
+  function observeRevealElements() {
+
+    document.querySelectorAll('.reveal:not(.visible)').forEach(function(el) {
+
+      observer.observe(el);
+
+    });
+
+  }
+
+  // 加载文章
+
+  loadArticles();
+
+  // ─── 9. 文章弹窗 ───
+
+  const articleModal = document.getElementById('articleModal');
+
+  const modalTitle = document.getElementById('modalTitle');
+
+  const modalDate = document.getElementById('modalDate');
+
+  const modalTag = document.getElementById('modalTag');
+
+  const modalBody = document.getElementById('modalBody');
+
+  const modalClose = document.getElementById('modalClose');
+
+  // 打开弹窗
+
+  function openModal(articleId, title, date, tag, content) {
+
+    modalTitle.textContent = title;
+
+    modalDate.textContent = date;
+
+    modalTag.textContent = tag;
+
+    modalBody.innerHTML = contentToHtml(content);
+
+    articleModal.classList.add('open');
+
+    document.body.style.overflow = 'hidden';
+
+    loadComments(articleId);
+
+  }
+
+  // 关闭弹窗
+
+  function closeModal() {
+
+    articleModal.classList.remove('open');
+
+    document.body.style.overflow = '';
+
+    currentArticleId = null;
+
+  }
+
+  modalClose.addEventListener('click', closeModal);
+
+  // 点击弹窗外部也关闭
+
+  articleModal.addEventListener('click', function(e) {
+
+    if (e.target === articleModal) {
+
+      closeModal();
+
+    }
+
+  });
+
+  // ESC 键关闭弹窗
+
+  document.addEventListener('keydown', function(e) {
+
+    if (e.key === 'Escape') {
+
+      closeModal();
+
+      closeMobileMenu();
+
+    }
+
+  });
+
+  // ─── 评论功能 ───
+
+  const COMMENT_API = 'comments.php';
+
+  let currentArticleId = null;
+
+  async function loadComments(articleId) {
+
+    currentArticleId = articleId;
+
+    var listEl = document.getElementById('commentList');
+
+    if (!listEl) return;
+
+    try {
+
+      var res = await fetch(COMMENT_API + '?article_id=' + encodeURIComponent(articleId));
+
+      var data = await res.json();
+
+      if (!data.success || !data.comments.length) {
+
+        listEl.innerHTML = '<div class="comment-empty">还没有留言，来说点什么吧 ✍️</div>';
+
+        return;
+
+      }
+
+      listEl.innerHTML = data.comments.map(function(c) {
+
+        var contactHtml = '';
+
+        if (c.contact) {
+
+          var href = c.contact;
+
+          if (!/^https?:\/\//i.test(href) && href.indexOf('@') > 0) href = 'mailto:' + href;
+
+          contactHtml = ' · <a class="comment-contact" href="' + escapeHtml(href) + '" target="_blank" rel="noopener">' + escapeHtml(c.contact) + '</a>';
+
+        }
+
+        return '<div class="comment-item">' +
+
+          '<div class="comment-nick">' + escapeHtml(c.nickname) + contactHtml +
+
+          '<span class="comment-date">' + escapeHtml(c.date) + '</span></div>' +
+
+          '<div class="comment-text">' + escapeHtml(c.content) + '</div>' +
+
+        '</div>';
+
+      }).join('');
+
+    } catch(e) {
+
+      listEl.innerHTML = '<div class="comment-empty">加载失败</div>';
+
+    }
+
+  }
+
+  document.getElementById('commentForm').addEventListener('submit', async function(e) {
+
+    e.preventDefault();
+
+    var btn = this.querySelector('button');
+
+    var nickname = this.querySelector('[name="nickname"]').value.trim();
+
+    var contact = this.querySelector('[name="contact"]').value.trim();
+
+    var content = this.querySelector('[name="content"]').value.trim();
+
+    if (!nickname || !content) return;
+
+    if (!currentArticleId) return;
+
+    btn.disabled = true;
+
+    btn.textContent = '发送中...';
+
+    try {
+
+      var res = await fetch(COMMENT_API, {
+
+        method: 'POST',
+
+        headers: { 'Content-Type': 'application/json' },
+
+        body: JSON.stringify({ article_id: currentArticleId, nickname: nickname, contact: contact, content: content })
+
+      });
+
+      var data = await res.json();
+
+      if (data.success) {
+
+        this.querySelector('[name="content"]').value = '';
+
+        loadComments(currentArticleId);
+
+      } else {
+
+        alert(data.error || '评论失败');
+
+      }
+
+    } catch(e) {
+
+      alert('网络错误，请稍后重试');
+
+    }
+
+    btn.disabled = false;
+
+    btn.textContent = '发布留言';
+
+  });
+
+  // ─── 10. 几何线条背景（跟随鼠标但不遮挡）──
+
+  (function() {
+
+    var canvas = document.getElementById('lineCanvas');
+
+    if (!canvas) return;
+
+    var ctx = canvas.getContext('2d');
+
+    var W, H;
+
+    var mouse = { x: -9999, y: -9999 };
+
+    var isMouseOnPage = false;
+
+    var nodes = [];
+
+    var time = 0;
+
+    // 网格分布 + 随机偏移，保证均匀不扎堆
+
+    var cols = 10, rows = 7;
+
+    var nodeCount = cols * rows;
+
+    function isDark() {
+
+      return document.documentElement.getAttribute('data-theme') === 'dark';
+
+    }
+
+    function resize() {
+
+      W = canvas.width = window.innerWidth;
+
+      H = canvas.height = window.innerHeight;
+
+      // 重新计算节点位置
+
+      initNodes();
+
+    }
+
+    function initNodes() {
+
+      nodes = [];
+
+      var cw = W / cols, ch = H / rows;
+
+      for (var r = 0; r < rows; r++) {
+
+        for (var c = 0; c < cols; c++) {
+
+          var jitterX = (Math.random() - 0.5) * cw * 0.6;
+
+          var jitterY = (Math.random() - 0.5) * ch * 0.6;
+
+          nodes.push({
+
+            ox: cw * (c + 0.5) + jitterX,
+
+            oy: ch * (r + 0.5) + jitterY,
+
+            x: 0, y: 0,
+
+            phase: Math.random() * Math.PI * 2,
+
+            speed: 0.2 + Math.random() * 0.3,
+
+            drift: 15 + Math.random() * 25,
+
+            size: 1.5 + Math.random() * 2.5
+
+          });
+
+        }
+
+      }
+
+      buildConnections();
+
+    }
+
+    // 连接：只连近距离的，控制连线数量
+
+    var connections = [];
+
+    var connDist = 230;
+
+    function buildConnections() {
+
+      connections = [];
+
+      for (var i = 0; i < nodes.length; i++) {
+
+        for (var j = i + 1; j < nodes.length; j++) {
+
+          var dx = nodes[i].ox - nodes[j].ox;
+
+          var dy = nodes[i].oy - nodes[j].oy;
+
+          var d = Math.sqrt(dx * dx + dy * dy);
+
+          if (d < connDist) {
+
+            connections.push([i, j, d]);
+
+          }
+
+        }
+
+      }
+
+    }
+
+    resize();
+
+    window.addEventListener('resize', resize);
+
+    function animate() {
+
+      time += 0.006;
+
+      ctx.clearRect(0, 0, W, H);
+
+      var dark = isDark();
+
+      var base = dark ? 180 : 80;
+
+      // 基础透明度很低，不遮挡内容
+
+      var aLine = dark ? 0.15 : 0.10;
+
+      var aDot  = dark ? 0.22 : 0.16;
+
+      var aGlow = dark ? 0.08 : 0.06;
+
+      // 更新节点
+
+      for (var i = 0; i < nodes.length; i++) {
+
+        var n = nodes[i];
+
+        var px = Math.sin(time * n.speed + n.phase) * n.drift;
+
+        var py = Math.cos(time * n.speed * 0.8 + n.phase + 1) * n.drift;
+
+        // 鼠标轻微吸引（力度很小，不干扰阅读）
+
+        if (isMouseOnPage) {
+
+          var dx = mouse.x - n.ox;
+
+          var dy = mouse.y - n.oy;
+
+          var d = Math.sqrt(dx * dx + dy * dy);
+
+          if (d < 350 && d > 1) {
+
+            var force = (350 - d) / 350;
+
+            force = force * force * 50;
+
+            var angle = Math.atan2(dy, dx);
+
+            px += Math.cos(angle) * force;
+
+            py += Math.sin(angle) * force;
+
+          }
+
+        }
+
+        n.x = n.ox + px;
+
+        n.y = n.oy + py;
+
+      }
+
+      // 画连线（细线，半透明）
+
+      for (var c = 0; c < connections.length; c++) {
+
+        var conn = connections[c];
+
+        var a = nodes[conn[0]], b = nodes[conn[1]];
+
+        var dist = conn[2];
+
+        var fade = 1 - dist / connDist; // 越远越淡
+
+        var alpha = aLine * fade;
+
+        // 鼠标附近微微加亮
+
+        if (isMouseOnPage) {
+
+          var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+
+          var md = Math.sqrt((mx - mouse.x) * (mx - mouse.x) + (my - mouse.y) * (my - mouse.y));
+
+          if (md < 250) alpha += (1 - md / 250) * 0.12;
+
+        }
+
+        ctx.beginPath();
+
+        ctx.moveTo(a.x, a.y);
+
+        var off = Math.sin(time * 1.5 + conn[0] * 0.3) * 2;
+
+        ctx.quadraticCurveTo((a.x + b.x) / 2 + off, (a.y + b.y) / 2 - off, b.x, b.y);
+
+        ctx.strokeStyle = 'rgba(' + base + ',' + base + ',' + base + ',' + alpha + ')';
+
+        ctx.lineWidth = 0.8;
+
+        ctx.stroke();
+
+      }
+
+      // 画节点（小圆点）
+
+      for (var i = 0; i < nodes.length; i++) {
+
+        var n = nodes[i];
+
+        var alpha = aDot;
+
+        if (isMouseOnPage) {
+
+          var md = Math.sqrt((n.x - mouse.x) * (n.x - mouse.x) + (n.y - mouse.y) * (n.y - mouse.y));
+
+          if (md < 250) alpha += (1 - md / 250) * 0.25;
+
+        }
+
+        ctx.beginPath();
+
+        ctx.arc(n.x, n.y, n.size, 0, Math.PI * 2);
+
+        ctx.fillStyle = 'rgba(' + base + ',' + base + ',' + base + ',' + alpha + ')';
+
+        ctx.fill();
+
+      }
+
+      // 鼠标处极淡光晕（几乎看不见，纯氛围）
+
+      if (isMouseOnPage) {
+
+        var g = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 250);
+
+        g.addColorStop(0, 'rgba(' + base + ',' + base + ',' + base + ',' + aGlow + ')');
+
+        g.addColorStop(1, 'rgba(' + base + ',' + base + ',' + base + ',0)');
+
+        ctx.beginPath();
+
+        ctx.arc(mouse.x, mouse.y, 250, 0, Math.PI * 2);
+
+        ctx.fillStyle = g;
+
+        ctx.fill();
+
+      }
+
+      requestAnimationFrame(animate);
+
+    }
+
+    animate();
+
+    document.addEventListener('mousemove', function(e) {
+
+      mouse.x = e.clientX; mouse.y = e.clientY; isMouseOnPage = true;
+
+    });
+
+    document.addEventListener('mouseleave', function() { isMouseOnPage = false; });
+
+    document.addEventListener('touchmove', function(e) {
+
+      if (e.touches.length) { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; isMouseOnPage = true; }
+
+    }, { passive: true });
+
+    document.addEventListener('touchend', function() { isMouseOnPage = false; });
+
+  })();
+
+  // ─── 11. 控制台彩蛋 ───
+
+  console.log('%c 凡人生平 Blog ', 'background:#1a1a1a;color:#fafaf9;font-size:14px;padding:4px 8px;border-radius:2px;');
+
+  console.log('Lines & Thoughts · 极简线条博客');
+
+</script>
+
+</body>
+
+</html>
+

@@ -61,114 +61,15 @@ if ($loggedIn) {
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;300;400;600&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+SC:wght@200;300;400;600&display=swap" rel="stylesheet">
 
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  :root {
-    --bg: #fafaf9; --ink: #1a1a1a; --muted: #8a8a8a;
-    --line: #d4d4d4; --card-bg: #ffffff; --nav-bg: rgba(250,250,249,0.85);
-    --serif: 'Noto Serif SC', 'Georgia', serif;
-    --sans: 'Space Grotesk', 'Helvetica Neue', sans-serif;
-    --success: #2d8a4e; --error: #c0392b;
-  }
-  [data-theme="dark"] {
-    --bg: #0f0f0f; --ink: #e8e8e8; --muted: #6a6a6a;
-    --line: #2a2a2a; --card-bg: #1a1a1a; --nav-bg: rgba(15,15,15,0.9);
-    --success: #4ade80; --error: #f87171;
-  }
-  body {
-    font-family: var(--sans); background: var(--bg); color: var(--ink);
-    line-height: 1.7; -webkit-font-smoothing: antialiased;
-    transition: background 0.4s, color 0.4s;
-  }
-
-  /* 导航 */
-  nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: var(--nav-bg); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
-  nav .inner { max-width: 960px; margin: 0 auto; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 60px; }
-  nav .logo { font-family: var(--serif); font-size: 1.1rem; font-weight: 300; letter-spacing: 0.08em; color: var(--ink); text-decoration: none; }
-  nav .logo span { font-weight: 600; }
-  nav .links { display: flex; gap: 1.5rem; align-items: center; }
-  nav .links a { font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 0.3s; }
-  nav .links a:hover { color: var(--ink); }
-  .theme-toggle { background: none; border: 1px solid var(--line); border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; color: var(--ink); transition: all 0.3s; }
-  .theme-toggle:hover { border-color: var(--ink); transform: rotate(30deg); }
-
-  /* 通知徽章 */
-  .badge {
-    display: inline-block;
-    background: var(--ink); color: var(--bg);
-    font-size: 0.62rem; min-width: 18px; height: 18px;
-    line-height: 18px; text-align: center; border-radius: 9px;
-    padding: 0 5px; margin-left: 4px; vertical-align: middle;
-    font-weight: 500; transition: background 0.4s, color 0.4s;
-  }
-
-  .container { max-width: 500px; margin: 0 auto; padding: 120px 2rem 4rem; }
-
-  /* 登录表单 */
-  .login-box { border: 1px solid var(--line); padding: 3rem; background: var(--card-bg); transition: background 0.4s; }
-  .login-title { font-family: var(--serif); font-size: 1.6rem; font-weight: 300; margin-bottom: 0.5rem; text-align: center; }
-  .login-desc { font-size: 0.8rem; color: var(--muted); text-align: center; margin-bottom: 2rem; }
-  .form-group { margin-bottom: 1.5rem; }
-  .form-label { display: block; font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
-  .form-input { width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 0.9rem; outline: none; transition: border-color 0.3s; }
-  .form-input:focus { border-color: var(--ink); }
-  .btn { width: 100%; padding: 0.8rem; border: none; border-radius: 4px; background: var(--ink); color: var(--bg); font-family: var(--sans); font-size: 0.85rem; letter-spacing: 0.1em; cursor: pointer; transition: opacity 0.3s; }
-  .btn:hover { opacity: 0.85; }
-  .error-msg { color: var(--error); font-size: 0.8rem; text-align: center; margin-bottom: 1rem; }
-
-  /* 写文章页面 */
-  .page-title { font-family: var(--serif); font-size: 1.8rem; font-weight: 300; margin-bottom: 0.5rem; }
-  .page-desc { font-size: 0.85rem; color: var(--muted); margin-bottom: 3rem; }
-  .form-select { width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--line); border-radius: 4px; background: var(--card-bg); color: var(--ink); font-family: var(--sans); font-size: 0.9rem; outline: none; transition: border-color 0.3s, background 0.4s; }
-  .form-select:focus { border-color: var(--ink); }
-  .form-textarea { width: 100%; min-height: 350px; padding: 1rem; border: 1px solid var(--line); border-radius: 4px; background: var(--card-bg); color: var(--ink); font-family: var(--serif); font-size: 1rem; line-height: 2; outline: none; resize: vertical; transition: border-color 0.3s, background 0.4s; }
-  .form-textarea:focus { border-color: var(--ink); }
-  .form-hint { font-size: 0.75rem; color: var(--muted); margin-top: 0.4rem; }
-  .btn-row { display: flex; gap: 1rem; margin-top: 2rem; }
-  .btn-primary { flex: 1; padding: 0.8rem; border: none; border-radius: 4px; background: var(--ink); color: var(--bg); font-family: var(--sans); font-size: 0.85rem; letter-spacing: 0.1em; cursor: pointer; transition: opacity 0.3s; }
-  .btn-primary:hover { opacity: 0.85; }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn-secondary { padding: 0.8rem 1.5rem; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--muted); font-family: var(--sans); font-size: 0.85rem; cursor: pointer; transition: all 0.3s; }
-  .btn-secondary:hover { color: var(--ink); border-color: var(--ink); }
-  .btn-logout { display: inline-block; font-size: 0.75rem; color: var(--muted); text-decoration: none; border: 1px solid var(--line); padding: 0.3em 0.8em; border-radius: 3px; transition: all 0.3s; margin-left: 1rem; }
-  .btn-logout:hover { color: var(--error); border-color: var(--error); }
-
-  /* 管理列表 */
-  .manage-section { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--line); }
-  .manage-title { font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; }
-  .manage-title::before { content: ''; width: 40px; height: 1px; background: var(--line); }
-  .article-manage-item { display: flex; align-items: center; justify-content: space-between; padding: 1rem 0; border-bottom: 1px solid var(--line); }
-  .article-manage-info { flex: 1; }
-  .article-manage-info h4 { font-family: var(--serif); font-size: 1rem; font-weight: 400; margin-bottom: 0.2rem; }
-  .article-manage-info span { font-size: 0.75rem; color: var(--muted); }
-  .btn-delete { padding: 0.4rem 1rem; border: 1px solid var(--line); border-radius: 3px; background: transparent; color: var(--muted); font-size: 0.75rem; cursor: pointer; transition: all 0.3s; }
-  .btn-delete:hover { color: var(--error); border-color: var(--error); }
-  .empty-state { text-align: center; padding: 3rem 0; color: var(--muted); font-size: 0.85rem; }
-
-  /* Toast */
-  .toast { position: fixed; top: 80px; right: 2rem; padding: 1rem 1.5rem; border-radius: 4px; font-size: 0.85rem; z-index: 200; opacity: 0; transform: translateY(-10px); transition: all 0.3s; pointer-events: none; }
-  .toast.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
-  .toast.success { background: var(--success); color: #fff; }
-  .toast.error { background: var(--error); color: #fff; }
-
-  @media (max-width: 640px) {
-    nav .inner { height: auto; min-height: 60px; padding: 0.6rem 1rem; flex-wrap: wrap; gap: 0.4rem 1rem; }
-    nav .links { flex-wrap: wrap; gap: 0.8rem; }
-    .container { padding: 130px 1.5rem 3rem; }
-    .login-box { padding: 2rem 1.5rem; }
-    .btn-row { flex-direction: column; }
-    .article-manage-item { flex-direction: column; align-items: flex-start; gap: 0.8rem; }
-  }
-</style>
+<link rel="stylesheet" href="admin.css">
 </head>
 <body>
 
 <nav>
   <div class="inner">
-    <a href="index.html" class="logo"><?php echo esc(BLOG_NAME); ?></a>
+    <a href="index.html" class="logo"><?php echo esc(BLOG_NAME); ?><span class="ver">v1.0</span></a>
     <div class="links">
       <a href="index.html">首页</a>
       <?php if ($loggedIn): ?>
@@ -210,8 +111,10 @@ if ($loggedIn) {
 
 <?php else: ?>
   <!-- ═══ 写文章页面 ═══ -->
-  <h1 class="page-title">写一篇新文章</h1>
-  <p class="page-desc">在下方填写内容，点击发布即可出现在博客首页。</p>
+  <div class="page-head">
+    <h1 class="page-title">写一篇新文章</h1>
+    <p class="page-desc">在下方填写内容，点击发布即可出现在博客首页。</p>
+  </div>
 
   <form id="articleForm" onsubmit="return false;">
     <input type="hidden" id="csrfToken" value="<?php echo esc($csrfToken); ?>">

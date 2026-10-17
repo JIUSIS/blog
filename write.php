@@ -17,33 +17,37 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
     exit;
 }
 
-// 处理登录表单提交
+$csrfToken = generateCsrfToken();
 $loginError = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'login') {
-    $password = $_POST['password'] ?? '';
-    if (doLogin($password)) {
-        header('Location: write.php');
-        exit;
+
+// 处理登录表单提交
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'login') {
+    if (!is_string($_POST['_csrf'] ?? null) || !verifyCsrfToken($_POST['_csrf'])) {
+        $loginError = '页面已过期，请刷新后重试';
+    } elseif (!isPasswordConfigured()) {
+        $loginError = '尚未配置管理员密码，见 README「配置说明」';
     } else {
-        $loginError = '密码错误，请重试';
+        $lockRemaining = loginLockRemaining();
+        if ($lockRemaining > 0) {
+            $loginError = '尝试次数过多，请 ' . (int)ceil($lockRemaining / 60) . ' 分钟后再试';
+        } elseif (doLogin(is_string($_POST['password'] ?? null) ? $_POST['password'] : '')) {
+            header('Location: write.php');
+            exit;
+        } else {
+            $loginError = '密码错误，请重试';
+        }
     }
 }
 
 $loggedIn = isLoggedIn();
-$csrfToken = generateCsrfToken();
 
 // 未读留言计数
 $unreadCount = 0;
 if ($loggedIn) {
-    $comments = json_decode(file_get_contents(__DIR__ . '/comments.json'), true) ?? [];
-    $stateFile = __DIR__ . '/read_state.json';
-    $lastRead = 0;
-    if (file_exists($stateFile)) {
-        $state = json_decode(file_get_contents($stateFile), true);
-        $lastRead = $state['last_read'] ?? 0;
-    }
+    $comments = readJsonFile(COMMENT_FILE);
+    $lastRead = (int)(readJsonFile(STATE_FILE)['last_read'] ?? 0);
     foreach ($comments as $c) {
-        if (($c['timestamp'] ?? 0) > $lastRead) $unreadCount++;
+        if ((int)($c['timestamp'] ?? 0) > $lastRead) $unreadCount++;
     }
 }
 ?>
@@ -53,7 +57,7 @@ if ($loggedIn) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title><?php echo $loggedIn ? '写文章' : '登录'; ?> · 凡人生平</title>
+<title><?php echo $loggedIn ? '写文章' : '登录'; ?> · <?php echo esc(BLOG_NAME); ?></title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -151,7 +155,9 @@ if ($loggedIn) {
   .toast.error { background: var(--error); color: #fff; }
 
   @media (max-width: 640px) {
-    .container { padding: 100px 1.5rem 3rem; }
+    nav .inner { height: auto; min-height: 60px; padding: 0.6rem 1rem; flex-wrap: wrap; gap: 0.4rem 1rem; }
+    nav .links { flex-wrap: wrap; gap: 0.8rem; }
+    .container { padding: 130px 1.5rem 3rem; }
     .login-box { padding: 2rem 1.5rem; }
     .btn-row { flex-direction: column; }
     .article-manage-item { flex-direction: column; align-items: flex-start; gap: 0.8rem; }
@@ -162,7 +168,7 @@ if ($loggedIn) {
 
 <nav>
   <div class="inner">
-    <a href="index.html" class="logo">凡人生平</a>
+    <a href="index.html" class="logo"><?php echo esc(BLOG_NAME); ?></a>
     <div class="links">
       <a href="index.html">首页</a>
       <?php if ($loggedIn): ?>
@@ -187,8 +193,13 @@ if ($loggedIn) {
       <p class="error-msg"><?php echo esc($loginError); ?></p>
     <?php endif; ?>
 
+    <?php if (!isPasswordConfigured()): ?>
+      <p class="error-msg">尚未配置管理员密码，见 README「配置说明」</p>
+    <?php endif; ?>
+
     <form method="POST" action="write.php">
       <input type="hidden" name="action" value="login">
+      <input type="hidden" name="_csrf" value="<?php echo esc($csrfToken); ?>">
       <div class="form-group">
         <label class="form-label">密码</label>
         <input type="password" class="form-input" name="password" placeholder="输入管理员密码..." autofocus required>

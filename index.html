@@ -17,6 +17,14 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect x=%224%22 y=%2214%22 width=%2224%22 height=%224%22 rx=%222%22 fill=%22%231a1a1a%22/></svg>">
 <title>凡人生平 · 个人博客</title>
 
+<meta name="description" content="凡人生平：一个极简线条风格的个人博客，记录设计、技术与生活的思考。">
+
+<meta property="og:type" content="website">
+
+<meta property="og:title" content="凡人生平 · 个人博客">
+
+<meta property="og:description" content="一个极简线条风格的个人博客，记录设计、技术与生活的思考。">
+
 <!-- 
 
   ╔══════════════════════════════════════════════╗
@@ -1471,7 +1479,7 @@
 
       <!-- ✏️ 修改这里：搜索框占位文字 -->
 
-      <input type="text" id="searchInput" placeholder="搜索文章标题或分类...">
+      <input type="text" id="searchInput" placeholder="搜索标题、标签或正文...">
 
     </div>
 
@@ -1731,7 +1739,7 @@
 
     return paragraphs.map(function(p) {
 
-      return '<p>' + escapeHtml(p) + '</p>';
+      return '<p>' + escapeHtml(p).replace(/\n/g, '<br>') + '</p>';
 
     }).join('');
 
@@ -2092,7 +2100,9 @@
 
         const tag = (item.getAttribute('data-tag') || '').toLowerCase();
 
-        const match = title.includes(query) || tag.includes(query);
+        const content = (item.getAttribute('data-content') || '').toLowerCase();
+
+        const match = title.includes(query) || tag.includes(query) || content.includes(query);
 
         item.classList.toggle('hidden', !match);
 
@@ -2258,7 +2268,15 @@
 
           if (!/^https?:\/\//i.test(href) && href.indexOf('@') > 0) href = 'mailto:' + href;
 
-          contactHtml = ' · <a class="comment-contact" href="' + escapeHtml(href) + '" target="_blank" rel="noopener">' + escapeHtml(c.contact) + '</a>';
+          var linkable = /^(https?:\/\/|mailto:)/i.test(href);
+
+          // 只允许 http(s) / mailto，其他协议按纯文本显示
+
+          contactHtml = linkable
+
+            ? ' · <a class="comment-contact" href="' + escapeHtml(href) + '" target="_blank" rel="noopener">' + escapeHtml(c.contact) + '</a>'
+
+            : ' · <span class="comment-contact">' + escapeHtml(c.contact) + '</span>';
 
         }
 
@@ -2359,6 +2377,8 @@
     var nodes = [];
 
     var time = 0;
+
+    var rafId = null;
 
     // 网格分布 + 随机偏移，保证均匀不扎堆
 
@@ -2608,11 +2628,19 @@
 
       }
 
-      requestAnimationFrame(animate);
+      rafId = document.hidden ? null : requestAnimationFrame(animate);
 
     }
 
-    animate();
+    var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (!reduceMotion) rafId = requestAnimationFrame(animate);
+
+    document.addEventListener('visibilitychange', function() {
+
+      if (!document.hidden && !reduceMotion && rafId === null) rafId = requestAnimationFrame(animate);
+
+    });
 
     document.addEventListener('mousemove', function(e) {
 

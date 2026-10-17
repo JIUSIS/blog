@@ -6,19 +6,39 @@
 require_once __DIR__ . '/auth.php';
 requireAuthRedirect();
 
+$csrfToken = generateCsrfToken();
+
 // 读取数据
-$comments = json_decode(file_get_contents(__DIR__ . '/comments.json'), true) ?? [];
-$articles = json_decode(file_get_contents(DATA_FILE), true) ?? [];
+$comments = readJsonFile(COMMENT_FILE);
+$articles = readJsonFile(DATA_FILE);
+
+// 已读状态（本次访问之前的未读数）
+$lastRead = (int)(readJsonFile(STATE_FILE)['last_read'] ?? 0);
+$unreadCount = 0;
+foreach ($comments as $c) {
+    if ((int)($c['timestamp'] ?? 0) > $lastRead) $unreadCount++;
+}
+
+// 处理删除评论（需要 CSRF）
+$deleted = false;
+$deleteError = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
+    if (!is_string($_POST['_csrf'] ?? null) || !verifyCsrfToken($_POST['_csrf'])) {
+        $deleteError = '操作已过期，请刷新后重试';
+    } else {
+        $deleteId = is_string($_POST['delete_id']) ? $_POST['delete_id'] : '';
+        mutateJsonFile(COMMENT_FILE, function (array $all) use ($deleteId) {
+            return array_values(array_filter($all, function ($c) use ($deleteId) {
+                return ($c['id'] ?? '') !== $deleteId;
+            }));
+        });
+        $comments = readJsonFile(COMMENT_FILE);
+        $deleted = true;
+    }
+}
 
 // 标记已读：保存当前时间
-$stateFile = __DIR__ . '/read_state.json';
-$now = time();
-$lastRead = 0;
-if (file_exists($stateFile)) {
-    $state = json_decode(file_get_contents($stateFile), true);
-    $lastRead = $state['last_read'] ?? 0;
-}
-file_put_contents($stateFile, json_encode(['last_read' => $now]));
+writeJsonFile(STATE_FILE, ['last_read' => time()]);
 
 // 按文章 ID 建索引
 $articleMap = [];
@@ -27,38 +47,17 @@ foreach ($articles as $a) {
 }
 
 // 按时间排序（最新在前）
-usort($comments, function($a, $b) { return $b['timestamp'] - $a['timestamp']; });
+usort($comments, function($a, $b) { return (int)($b['timestamp'] ?? 0) - (int)($a['timestamp'] ?? 0); });
 
 $totalComments = count($comments);
 $totalArticles = count($articles);
-
-// 未读数（标记已读之前的）
-$unreadCount = 0;
-foreach ($comments as $c) {
-    if (($c['timestamp'] ?? 0) > $lastRead) $unreadCount++;
-}
-
-// 处理删除评论
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
-    $deleteId = $_POST['delete_id'];
-    $comments = array_filter($comments, function($c) use ($deleteId) {
-        return $c['id'] !== $deleteId;
-    });
-    $comments = array_values($comments);
-    file_put_contents(__DIR__ . '/comments.json', json_encode($comments, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
-    $totalComments = count($comments);
-    $deleted = true;
-}
-
-$loggedIn = isLoggedIn();
-$csrfToken = generateCsrfToken();
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>留言管理 · 凡人生平</title>
+<title>留言管理 · <?php echo esc(BLOG_NAME); ?></title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -146,7 +145,9 @@ $csrfToken = generateCsrfToken();
 
   @media (max-width: 640px) {
     .stats { grid-template-columns: 1fr; }
-    nav .links { display: none; }
+    nav .inner { height: auto; min-height: 60px; padding: 0.6rem 1rem; flex-wrap: wrap; gap: 0.4rem 1rem; }
+    nav .links { flex-wrap: wrap; gap: 0.8rem; }
+    .container { padding: 130px 1.5rem 3rem; }
   }
 </style>
 </head>
@@ -154,7 +155,7 @@ $csrfToken = generateCsrfToken();
 
 <nav>
   <div class="inner">
-    <a href="index.html" class="logo">凡人生平</a>
+    <a href="index.html" class="logo"><?php echo esc(BLOG_NAME); ?></a>
     <div class="links">
       <a href="write.php">写文章</a>
       <a href="dashboard.php" class="active">留言管理<?php if ($unreadCount > 0): ?><span class="badge"><?php echo $unreadCount; ?></span><?php endif; ?></a>
@@ -183,8 +184,11 @@ $csrfToken = generateCsrfToken();
 
   <h2 style="font-family:var(--serif);font-weight:300;margin-bottom:1.5rem;">所有留言</h2>
 
-  <?php if (isset($deleted)): ?>
+  <?php if ($deleted): ?>
     <div class="toast" id="toast" style="display:block;">留言已删除</div>
+    <script>setTimeout(function(){ document.getElementById('toast').style.display='none'; }, 2000);</script>
+  <?php elseif ($deleteError): ?>
+    <div class="toast" id="toast" style="display:block;background:var(--error);color:#fff;"><?php echo esc($deleteError); ?></div>
     <script>setTimeout(function(){ document.getElementById('toast').style.display='none'; }, 2000);</script>
   <?php endif; ?>
 
@@ -208,6 +212,7 @@ $csrfToken = generateCsrfToken();
         <div class="comment-content"><?php echo nl2br(esc($c['content'])); ?></div>
         <div class="comment-actions">
           <form method="POST" onsubmit="return confirm('确定删除这条留言？');">
+            <input type="hidden" name="_csrf" value="<?php echo esc($csrfToken); ?>">
             <input type="hidden" name="delete_id" value="<?php echo esc($c['id']); ?>">
             <button type="submit" class="btn-del">删除</button>
           </form>

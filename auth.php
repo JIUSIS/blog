@@ -1,20 +1,25 @@
 <?php
 /**
  * 认证模块
- * 
+ *
  * 功能：
  *   - session 管理
  *   - 登录/登出/检查登录状态
- *   - 密码验证
+ *   - 密码验证（password_hash / 明文二选一）
+ *   - 登录失败锁定（按 IP）
  */
 
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/lib.php';
 
-// 安全的 session 启动
+// 安全的 session 启动（HTTPS 环境下自动启用 secure cookie）
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || ((($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https');
 if (session_status() === PHP_SESSION_NONE) {
     session_start([
         'cookie_httponly' => true,
         'cookie_samesite' => 'Strict',
+        'cookie_secure' => $isHttps,
         'use_strict_mode' => true
     ]);
 }
@@ -27,15 +32,75 @@ function isLoggedIn(): bool {
 }
 
 /**
+ * 是否已配置管理员密码
+ */
+function isPasswordConfigured(): bool {
+    return ADMIN_PASSWORD_HASH !== '' || ADMIN_PASSWORD !== '';
+}
+
+/**
+ * 登录锁定剩余秒数（0 表示未锁定）
+ */
+function loginLockRemaining(): int {
+    $entry = readJsonFile(ATTEMPTS_FILE)[clientIp()] ?? null;
+    if (!is_array($entry)) return 0;
+    if ((int)($entry['count'] ?? 0) < LOGIN_MAX_ATTEMPTS) return 0;
+    $remaining = LOGIN_LOCK_SECONDS - (time() - (int)($entry['last'] ?? 0));
+    return $remaining > 0 ? $remaining : 0;
+}
+
+/**
+ * 记录一次登录失败
+ */
+function recordLoginFailure(): void {
+    $ip = clientIp();
+    mutateJsonFile(ATTEMPTS_FILE, function (array $attempts) use ($ip) {
+        $now = time();
+        // 清理 24 小时前的旧记录，避免文件无限增长
+        foreach ($attempts as $key => $item) {
+            if (($now - (int)($item['last'] ?? 0)) > 86400) unset($attempts[$key]);
+        }
+        $entry = $attempts[$ip] ?? ['count' => 0, 'last' => 0];
+        // 距上次失败超过锁定窗口，则重新计数
+        $count = ((int)($entry['last'] ?? 0) < $now - LOGIN_LOCK_SECONDS) ? 0 : (int)$entry['count'];
+        $attempts[$ip] = ['count' => $count + 1, 'last' => $now];
+        return $attempts;
+    });
+}
+
+/**
+ * 清空当前 IP 的失败记录
+ */
+function clearLoginFailures(): void {
+    $ip = clientIp();
+    mutateJsonFile(ATTEMPTS_FILE, function (array $attempts) use ($ip) {
+        unset($attempts[$ip]);
+        return $attempts;
+    });
+}
+
+/**
  * 执行登录
  */
 function doLogin(string $password): bool {
-    if ($password === ADMIN_PASSWORD) {
+    if (loginLockRemaining() > 0) return false;
+
+    $ok = false;
+    if (ADMIN_PASSWORD_HASH !== '') {
+        $ok = password_verify($password, ADMIN_PASSWORD_HASH);
+    } elseif (ADMIN_PASSWORD !== '') {
+        $ok = hash_equals(ADMIN_PASSWORD, $password);
+    }
+
+    if ($ok) {
+        clearLoginFailures();
         session_regenerate_id(true); // 防止 session 固定攻击
         $_SESSION['admin_logged_in'] = true;
         $_SESSION['login_time'] = time();
         return true;
     }
+
+    recordLoginFailure();
     return false;
 }
 

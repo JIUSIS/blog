@@ -1,34 +1,43 @@
 <?php
 /**
  * 评论 API
- * GET  comments.php?article_id=xxx → 获取文章评论
+ * GET  comments.php?article_id=xxx → 获取文章评论（不返回 IP）
  * POST comments.php               → 提交评论
  */
 
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/lib.php';
+
 header('Content-Type: application/json; charset=utf-8');
-
-define('COMMENT_FILE', __DIR__ . '/comments.json');
-
-if (!file_exists(COMMENT_FILE)) {
-    file_put_contents(COMMENT_FILE, '[]');
-}
+header('X-Content-Type-Options: nosniff');
 
 $method = $_SERVER['REQUEST_METHOD'];
 
+/**
+ * 取字符串字段（类型不对或缺失时返回空串）
+ */
+function inputString($value): string {
+    return is_string($value) ? trim($value) : '';
+}
+
 if ($method === 'GET') {
-    $articleId = $_GET['article_id'] ?? '';
-    if (empty($articleId)) {
-        echo json_encode(['success' => false, 'error' => '缺少 article_id'], JSON_UNESCAPED_UNICODE);
-        exit;
+    $articleId = inputString($_GET['article_id'] ?? null);
+    if ($articleId === '') {
+        jsonError('缺少 article_id', 400);
     }
 
-    $all = json_decode(file_get_contents(COMMENT_FILE), true) ?? [];
-    $comments = array_filter($all, function($c) use ($articleId) {
-        return $c['article_id'] === $articleId;
-    });
-    $comments = array_values($comments);
+    $comments = array_values(array_filter(readJsonFile(COMMENT_FILE), function ($c) use ($articleId) {
+        return ($c['article_id'] ?? '') === $articleId;
+    }));
     // 按时间正序
-    usort($comments, function($a, $b) { return $a['timestamp'] - $b['timestamp']; });
+    usort($comments, function ($a, $b) {
+        return (int)($a['timestamp'] ?? 0) - (int)($b['timestamp'] ?? 0);
+    });
+    // 服务端存了 IP 用于限速，但不对外返回
+    $comments = array_map(function ($c) {
+        unset($c['ip']);
+        return $c;
+    }, $comments);
 
     echo json_encode([
         'success' => true,
@@ -40,58 +49,64 @@ if ($method === 'GET') {
 } elseif ($method === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true);
     if (!is_array($input)) {
-        echo json_encode(['success' => false, 'error' => '无效的请求数据'], 400, JSON_UNESCAPED_UNICODE);
-        exit;
+        jsonError('无效的请求数据', 400);
     }
 
-    $articleId = trim($input['article_id'] ?? '');
-    $nickname  = trim($input['nickname'] ?? '');
-    $contact   = trim($input['contact'] ?? '');
-    $content   = trim($input['content'] ?? '');
+    $articleId = inputString($input['article_id'] ?? null);
+    $nickname  = inputString($input['nickname'] ?? null);
+    $contact   = inputString($input['contact'] ?? null);
+    $content   = inputString($input['content'] ?? null);
 
     // 验证
-    if (empty($articleId)) {
-        echo json_encode(['success' => false, 'error' => '缺少文章ID'], 400, JSON_UNESCAPED_UNICODE);
-        exit;
+    if ($articleId === '') {
+        jsonError('缺少文章ID', 400);
     }
-    if (empty($nickname) || mb_strlen($nickname) > 30) {
-        echo json_encode(['success' => false, 'error' => '昵称不能为空且不超过30字'], 400, JSON_UNESCAPED_UNICODE);
-        exit;
+    if ($nickname === '' || mb_strlen($nickname) > 30) {
+        jsonError('昵称不能为空且不超过30字', 400);
     }
-    if (empty($content) || mb_strlen($content) > 1000) {
-        echo json_encode(['success' => false, 'error' => '评论内容不能为空且不超过1000字'], 400, JSON_UNESCAPED_UNICODE);
-        exit;
+    if ($content === '' || mb_strlen($content) > 1000) {
+        jsonError('评论内容不能为空且不超过1000字', 400);
     }
-    if (!empty($contact) && mb_strlen($contact) > 100) {
-        echo json_encode(['success' => false, 'error' => '联系方式过长'], 400, JSON_UNESCAPED_UNICODE);
-        exit;
+    if ($contact !== '' && mb_strlen($contact) > 100) {
+        jsonError('联系方式过长', 400);
     }
 
-    // 简单频率限制：同一 IP 10秒内只能发一条
-    $all = json_decode(file_get_contents(COMMENT_FILE), true) ?? [];
-    $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    // 文章必须存在，避免产生无主评论
+    $articleIds = array_column(readJsonFile(DATA_FILE), 'id');
+    if (!in_array($articleId, $articleIds, true)) {
+        jsonError('文章不存在', 404);
+    }
+
+    // 频率限制：同一 IP 10 秒内只能发一条（按该 IP 自己最近一条计算）
+    $ip = clientIp();
     $now = time();
-    foreach (array_reverse($all) as $c) {
-        if (($c['ip'] ?? '') === $ip && ($now - $c['timestamp']) < 10) {
-            echo json_encode(['success' => false, 'error' => '发送太快，请稍后再试'], 429, JSON_UNESCAPED_UNICODE);
-            exit;
+    foreach (array_reverse(readJsonFile(COMMENT_FILE)) as $c) {
+        if (($c['ip'] ?? '') !== $ip) continue;
+        if ($now - (int)($c['timestamp'] ?? 0) < 10) {
+            jsonError('发送太快，请稍后再试', 429);
         }
-        break; // 只看最新一条
+        break;
     }
 
+    // 存原文，输出时再转义
     $comment = [
         'id' => bin2hex(random_bytes(8)),
         'article_id' => $articleId,
-        'nickname' => htmlspecialchars($nickname, ENT_QUOTES, 'UTF-8'),
-        'contact' => htmlspecialchars($contact, ENT_QUOTES, 'UTF-8'),
-        'content' => htmlspecialchars($content, ENT_QUOTES, 'UTF-8'),
+        'nickname' => $nickname,
+        'contact' => $contact,
+        'content' => $content,
         'date' => date('Y.m.d H:i'),
         'timestamp' => $now,
         'ip' => $ip
     ];
 
-    $all[] = $comment;
-    file_put_contents(COMMENT_FILE, json_encode($all, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    $stored = mutateJsonFile(COMMENT_FILE, function (array $comments) use ($comment) {
+        $comments[] = $comment;
+        return $comments;
+    });
+    if (count($stored) === 0) {
+        jsonError('评论保存失败，请稍后再试', 500);
+    }
 
     // 不返回 ip 字段
     unset($comment['ip']);
@@ -103,7 +118,5 @@ if ($method === 'GET') {
     exit;
 
 } else {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'error' => '不支持的请求方法'], JSON_UNESCAPED_UNICODE);
-    exit;
+    jsonError('不支持的请求方法', 405);
 }
